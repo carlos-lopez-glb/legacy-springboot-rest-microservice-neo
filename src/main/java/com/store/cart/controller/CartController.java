@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.store.cart.service.CartService;
 
-import org.openapitools.api.CartApi;
+import org.openapitools.api.CartControllerApi;
 import org.openapitools.model.CartDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  *  */
 @RestController
 @Slf4j
-public class CartController implements CartApi {
+public class CartController implements CartControllerApi {
 
     public static final String CART_BASE_PATH = "/cart";
 

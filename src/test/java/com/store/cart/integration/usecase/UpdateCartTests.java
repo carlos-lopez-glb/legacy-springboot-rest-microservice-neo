@@ -1,74 +1,78 @@
 package com.store.cart.integration.usecase;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Mono;
 import org.openapitools.model.CartDto;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import com.store.cart.integration.IntegrationTestBase;
 
 class UpdateCartTests extends IntegrationTestBase {
 
-    @Test
-    void GIVEN_updatedCartWithExistingId_WHEN_putRequestToCartById_THEN_ok() {
-        // given
-        long existingCartId = 1L;
+        @Test
+        void GIVEN_updatedCartWithExistingId_WHEN_putRequestToCartById_THEN_ok() {
+                // given
+                long existingCartId = 1L;
 
-        CartDto cart =
-            webTestClient
-                .get()
-                .uri(CART_API_BASE_PATH + "/" + existingCartId)
-                .exchange()
-                .returnResult(CartDto.class)
-                .getResponseBody()
-                .blockFirst();
+                // First create a cart to update
+                CartDto newCart = new CartDto();
+                newCart.setCustomerId(100L);
+                newCart.setTotalPrice(100.0);
 
-        assert cart != null;
-        cart.setTotalPrice(111.11);
+                ResponseEntity<CartDto> createResponse = restTemplate.postForEntity(
+                        getBaseUrl() + CART_API_BASE_PATH,
+                        newCart,
+                        CartDto.class
+                );
 
-        // when
-        webTestClient
-            .put()
-            .uri(CART_API_BASE_PATH + "/" + cart.getId())
-            .body(Mono.just(cart), CartDto.class)
-            .exchange()
+                assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                CartDto createdCart = createResponse.getBody();
+                assertThat(createdCart).isNotNull();
 
-            // then
-            .expectStatus()
-            .isOk()
-            .expectBody(CartDto.class)
-            .isEqualTo(cart);
-    }
+                // Update the cart
+                createdCart.setTotalPrice(111.11);
 
-    @Test
-    void GIVEN_updatedCardWithNonExistingId_WHEN_putRequestToCartById_THEN_created() {
-        // given
-        long existingCartId = 1L;
-        long nonExistingCartId = 2L;
+                // when
+                HttpEntity<CartDto> requestEntity = new HttpEntity<>(createdCart);
+                ResponseEntity<CartDto> updateResponse = restTemplate.exchange(
+                        getBaseUrl() + CART_API_BASE_PATH + "/" + createdCart.getId(),
+                        HttpMethod.PUT,
+                        requestEntity,
+                        CartDto.class
+                );
 
-        CartDto cart =
-            webTestClient
-                .get()
-                .uri(CART_API_BASE_PATH + "/" + existingCartId)
-                .exchange()
-                .returnResult(CartDto.class)
-                .getResponseBody()
-                .blockFirst();
+                // then
+                assertThat(updateResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(updateResponse.getBody()).isNotNull();
+                assertThat(updateResponse.getBody().getTotalPrice()).isEqualTo(111.11);
+        }
 
-        assert cart != null;
-        cart.setId(nonExistingCartId);
-        cart.setTotalPrice(222.22);
+        @Test
+        void GIVEN_updatedCardWithNonExistingId_WHEN_putRequestToCartById_THEN_created() {
+                // given
+                long nonExistingCartId = 999L;
 
-        // when
-        webTestClient
-            .put()
-            .uri(CART_API_BASE_PATH + "/" + nonExistingCartId)
-            .body(Mono.just(cart), CartDto.class)
-            .exchange()
+                CartDto cart = new CartDto();
+                cart.setId(nonExistingCartId);
+                cart.setCustomerId(200L);
+                cart.setTotalPrice(222.22);
 
-            // then
-            .expectStatus()
-            .isCreated()
-            .expectBody(CartDto.class)
-            .isEqualTo(cart);
-    }
+                // when
+                HttpEntity<CartDto> requestEntity = new HttpEntity<>(cart);
+                ResponseEntity<CartDto> response = restTemplate.exchange(
+                        getBaseUrl() + CART_API_BASE_PATH + "/" + nonExistingCartId,
+                        HttpMethod.PUT,
+                        requestEntity,
+                        CartDto.class
+                );
+
+                // then
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                assertThat(response.getBody()).isNotNull();
+                assertThat(response.getBody().getTotalPrice()).isEqualTo(222.22);
+        }
 
 }
